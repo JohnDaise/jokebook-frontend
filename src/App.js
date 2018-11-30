@@ -5,6 +5,7 @@ import NavBar from './NavBar'
 import RandomJokePage from './RandomJokePage'
 import ProfileContainer from './containers/ProfileContainer'
 import LogInForm from './components/LogInForm'
+import NewUserForm from './components/NewUserForm'
 import AboutPage from './components/AboutPage'
 import NotFound from './components/NotFound'
 
@@ -49,19 +50,6 @@ class App extends React.Component {
     })
   }
 
-  // fetchUserJokes = () => {
-  //   const url = `http://localhost:3001/api/v1/users/${this.state.userInfo.id}/jokes`;
-  //   const token = localStorage.getItem("token");
-  //   fetch(url, {
-  //     headers: {
-  //       Accept: "application/json",
-  //       Authorization: `Bearer ${token}`
-  //     }
-  //   })
-  //   .then(res => res.json())
-  //   .then(json => console.log(json))
-  // }
-
   logout = () => {
     localStorage.clear();
     this.setState({ userInfo: null})
@@ -83,9 +71,9 @@ class App extends React.Component {
 
   handleAddJoke = (e) => {
     //e=joke description
-    // console.log(e)
+    console.log(e)
     const token = localStorage.getItem("token")
-    fetch(`http://localhost:3001/api/v1/jokes`, {
+    fetch(`http://localhost:3001/api/v1/users/${this.state.userInfo.id}/jokes`, {
       method: 'POST',
       headers: {
         "Accept":"application/json",
@@ -100,22 +88,26 @@ class App extends React.Component {
     .then(res => res.json())
     .then(joke => {
       this.setState({
-          userInfo: {
+        userInfo: {
+          ...this.state.userInfo,
+          jokes: [
             ...this.state.userInfo.jokes,
             joke
-          }
+          ]
+        }
       })
     })
   }
 
   handleDeleteJoke = (e) => {
-    // console.log(e)
-    // console.log(e.id)
+    console.log(e)
+    console.log(e.id)
     const token = localStorage.getItem("token")
-    fetch(`http://localhost:3001/api/v1/jokes/${e.id}`, {
+    fetch(`http://localhost:3001/api/v1/users/${this.state.userInfo.id}/jokes/${e.id}`, {
       method: 'DELETE',
       headers: {
         "Accept":"application/json",
+        "Content-Type":"application/json",
         Authorization: `Bearer ${token}`
       }
     })
@@ -123,9 +115,8 @@ class App extends React.Component {
     .then(data => {
       this.setState({
         userInfo: {
-          jokes: [
-            this.state.userInfo.jokes
-          ]
+          ...this.state.userInfo,
+          jokes: this.state.userInfo.jokes.filter(joke => joke.id !== e.id)
         }
       })
     })
@@ -140,12 +131,17 @@ class App extends React.Component {
 
           <Route exact path="/" render={() => (<Redirect to="/home" />)} />
           <Route exact path="/home" render={() =>
-            <RandomJokePage
-              currentUserJokes={this.state.userInfo.jokes}
-              currentJoke={this.state.currentJoke}
-              handleNextClick={this.handleNextClick}
-              handleAddJoke={this.handleAddJoke}
-            />}
+            !!this.state.userInfo ?
+              (<RandomJokePage
+                currentUser={this.state.userInfo}
+                currentJoke={this.state.currentJoke}
+                handleNextClick={this.handleNextClick}
+                handleAddJoke={this.handleAddJoke}
+              />)
+              :
+              (<Redirect to="/login" />)
+
+          }
           />
 
           <Route exact path="/profile" render={() =>
@@ -166,6 +162,9 @@ class App extends React.Component {
                 updateUserInfo={this.updateUserInfo}
                 fetchUserJokes={this.fetchUserJokes}
               />}
+          />
+          <Route exact path="/signup"
+            render={() => <NewUserForm updateUserInfo={this.updateUserInfo} />}
           />
           <Route component = {NotFound} />
         </Switch>
